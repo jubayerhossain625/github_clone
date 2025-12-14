@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:photo_view/photo_view.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../domain/entities/repository_entity.dart';
@@ -34,9 +35,26 @@ class RepositoryDetailsPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 40,
-              backgroundImage: NetworkImage(repo.avatarUrl),
+            GestureDetector(
+              onTap: () {
+                // Navigate to full screen photo view
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => Scaffold(
+                      appBar: AppBar(title: Text(repo.owner)),
+                      body: PhotoView(
+                        imageProvider: NetworkImage(repo.avatarUrl),
+                        backgroundDecoration: const BoxDecoration(color: Colors.black),
+                      ),
+                    ),
+                  ),
+                );
+              },
+              child: CircleAvatar(
+                radius: 40,
+                backgroundImage: NetworkImage(repo.avatarUrl),
+              ),
             ),
             const SizedBox(height: 16),
             GestureDetector(

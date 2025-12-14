@@ -32,8 +32,10 @@ dependencies:
   timeago: ^3.7.1
   # open link or url
   url_launcher: ^6.3.2
+  # uses for icons
   font_awesome_flutter: ^10.9.1
-
+  # image viewer
+  photo_view: ^0.15.0
 
 
 dev_dependencies:
