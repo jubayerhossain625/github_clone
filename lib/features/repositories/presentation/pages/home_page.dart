@@ -98,6 +98,7 @@ class HomePage extends ConsumerWidget {
             },
             child: ListView.builder(
               itemCount: sortedList.length,
+              shrinkWrap: true,
               itemBuilder: (_, i) => RepositoryTile(repo: sortedList[i]),
             ),
           );
