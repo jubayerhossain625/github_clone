@@ -68,30 +68,39 @@ class HomePage extends ConsumerWidget {
         data: (list) {
           final sortedList = [...list];
 
+          // 🔄 Apply sorting
           sortedList.sort((a, b) {
             int result;
-
             if (sortState.field == SortField.stars) {
               result = a.stars.compareTo(b.stars);
             } else {
               result = a.updatedAt.compareTo(b.updatedAt);
             }
-
-            return sortState.order == SortOrder.asc
-                ? result
-                : -result;
+            return sortState.order == SortOrder.asc ? result : -result;
           });
 
-          return ListView.builder(
-            itemCount: sortedList.length,
-            itemBuilder: (_, i) =>
-                RepositoryTile(repo: sortedList[i]),
+          // 🔁 Pull-to-refresh
+          return RefreshIndicator(
+            onRefresh: () async {
+              try {
+                await ref.refresh(repositoryProvider.future);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Repositories updated')),
+                );
+              } catch (_) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Failed to update repositories')),
+                );
+              }
+            },
+            child: ListView.builder(
+              itemCount: sortedList.length,
+              itemBuilder: (_, i) => RepositoryTile(repo: sortedList[i]),
+            ),
           );
         },
-        loading: () =>
-        const Center(child: CircularProgressIndicator()),
-        error: (e, _) =>
-            Center(child: Text(e.toString())),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text(e.toString())),
       ),
     );
   }

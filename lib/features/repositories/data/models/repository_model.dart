@@ -8,6 +8,7 @@ class RepositoryModel extends RepositoryEntity {
     required super.description,
     required super.stars,
     required super.updatedAt,
+    required super.html_url,
   });
 
   factory RepositoryModel.fromJson(Map<String, dynamic> json) {
@@ -18,6 +19,7 @@ class RepositoryModel extends RepositoryEntity {
       description: json['description'] ?? '',
       stars: json['stargazers_count'],
       updatedAt: DateTime.parse(json['updated_at']),
+      html_url: json['html_url'],
     );
   }
 
@@ -25,6 +27,7 @@ class RepositoryModel extends RepositoryEntity {
     'name': name,
     'owner': owner,
     'avatarUrl': avatarUrl,
+    'html_url':html_url,
     'description': description,
     'stars': stars,
     'updatedAt': updatedAt.toIso8601String(),
@@ -35,6 +38,7 @@ class RepositoryModel extends RepositoryEntity {
       name: json['name'],
       owner: json['owner'],
       avatarUrl: json['avatarUrl'],
+      html_url:'html_url',
       description: json['description'],
       stars: json['stars'],
       updatedAt: DateTime.parse(json['updatedAt']),

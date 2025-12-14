@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:dio/dio.dart';
 import '../../features/repositories/data/models/repository_model.dart';
 
@@ -17,6 +19,7 @@ class GithubApiService {
       },
     );
 
+    log("${response.data['items']}");
     return (response.data['items'] as List)
         .map((e) => RepositoryModel.fromJson(e))
         .toList();

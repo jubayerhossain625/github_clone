@@ -28,7 +28,10 @@ dependencies:
 
   # Date Formatting
   intl:
+  # time ago show formatting
   timeago: ^3.7.1
+  # open link or url
+  url_launcher: ^6.3.2
 
 
 
