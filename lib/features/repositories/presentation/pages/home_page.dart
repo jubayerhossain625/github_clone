@@ -17,6 +17,9 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
+  String _searchQuery = '';
 
   Future<void> _scrollToTop() async {
     if (!_scrollController.hasClients) return;
@@ -30,6 +33,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -39,6 +43,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     final sortState = ref.watch(sortProvider);
     final themeMode = ref.watch(themeProvider);
 
+    // Apply sorting
     final sortedList = [...repoState.items]..sort((a, b) {
       int result;
       if (sortState.field == SortField.stars) {
@@ -49,11 +54,71 @@ class _HomePageState extends ConsumerState<HomePage> {
       return sortState.order == SortOrder.asc ? result : -result;
     });
 
+    // Local search filter by owner
+    final filteredList = sortedList.where((repo) {
+      return repo.owner.toLowerCase().contains(_searchQuery.toLowerCase());
+    }).toList();
+
     return Scaffold(
       appBar: AppBar(
-        leading: const Icon(FontAwesomeIcons.github,size: 38,),
-        title: const Text('Repositories'),
+        leading: const Icon(FontAwesomeIcons.github),
+        title: _isSearching
+            ? TextField(
+          controller: _searchController,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'Search by owner...',
+            suffixIcon: IconButton(
+              icon: Icon(_isSearching ? Icons.close : Icons.search),
+              onPressed: () {
+                setState(() {
+                  if (_isSearching) {
+                    _searchQuery = '';
+                    _searchController.clear();
+                  }
+                  _isSearching = !_isSearching;
+                });
+              },
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.blueGrey),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.blueGrey),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.blueGrey),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+          ),
+          onChanged: (value) {
+            setState(() {
+              _searchQuery = value;
+            });
+          },
+        )
+            : const Text('Repositories'),
         actions: [
+          // Toggle search bar
+          if(!_isSearching)
+            IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                if (_isSearching) {
+                  _searchQuery = '';
+                  _searchController.clear();
+                }
+                _isSearching = !_isSearching;
+              });
+            },
+          ),
+
+          // Sort field
+          if(!_isSearching)
           IconButton(
             tooltip: sortState.field == SortField.stars
                 ? 'Sort by Last Updated'
@@ -69,7 +134,10 @@ class _HomePageState extends ConsumerState<HomePage> {
               await _scrollToTop();
             },
           ),
-          IconButton(
+
+          // Sort order
+          if(!_isSearching)
+            IconButton(
             tooltip: sortState.order == SortOrder.desc
                 ? 'Descending'
                 : 'Ascending',
@@ -83,6 +151,8 @@ class _HomePageState extends ConsumerState<HomePage> {
               await _scrollToTop();
             },
           ),
+
+          // Theme toggle
           IconButton(
             icon: Icon(
               themeMode == ThemeMode.dark
@@ -97,10 +167,9 @@ class _HomePageState extends ConsumerState<HomePage> {
 
       body: RocketRefreshEmoji(
         onRefresh: () async {
-          await ref
-              .read(repositoryProvider.notifier)
+          await ref.read(repositoryProvider.notifier)
               .fetchRepositories(refresh: true);
-          await _scrollToTop(); // scroll after refresh
+          await _scrollToTop();
         },
         child: NotificationListener<ScrollNotification>(
           onNotification: (scroll) {
@@ -108,21 +177,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                 scroll.metrics.maxScrollExtent - 200 &&
                 !repoState.isLoading &&
                 repoState.hasMore) {
-              ref
-                  .read(repositoryProvider.notifier)
-                  .fetchRepositories();
+              ref.read(repositoryProvider.notifier).fetchRepositories();
             }
             return false;
           },
-          child: repoState.items.isEmpty && repoState.isLoading
+          child: filteredList.isEmpty && repoState.isLoading
               ? const Center(child: CircularProgressIndicator())
               : ListView.builder(
-            shrinkWrap: true,
             controller: _scrollController,
-            itemCount: sortedList.length + (repoState.isLoading ? 1 : 0),
+            itemCount:
+            filteredList.length + (repoState.isLoading ? 1 : 0),
             itemBuilder: (context, index) {
-              if (index < sortedList.length) {
-                return RepositoryTile(repo: sortedList[index]);
+              if (index < filteredList.length) {
+                return RepositoryTile(repo: filteredList[index]);
               }
               return const Padding(
                 padding: EdgeInsets.all(16),
