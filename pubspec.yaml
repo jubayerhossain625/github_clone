@@ -32,6 +32,7 @@ dependencies:
   timeago: ^3.7.1
   # open link or url
   url_launcher: ^6.3.2
+  font_awesome_flutter: ^10.9.1
 
 
 

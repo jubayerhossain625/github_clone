@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../providers/repository_provider.dart';
 import '../providers/sort_provider.dart';
 import '../widgets/repository_tile.dart';
 import '../../../../core/theme/theme_provider.dart';
+import '../widgets/rocket_refresh_emoji.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -17,8 +19,11 @@ class HomePage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: const Icon(Icons.home),
-        title: const Text('Git Repositories'),
+        leading: Icon(
+          FontAwesomeIcons.github,
+          size: 38,
+        ),
+        title: const Text('Repositories'),
         actions: [
           // 🔀 Sort Field (Stars / Updated)
           IconButton(
@@ -79,15 +84,13 @@ class HomePage extends ConsumerWidget {
             return sortState.order == SortOrder.asc ? result : -result;
           });
 
-          // 🔁 Pull-to-refresh
-          return RefreshIndicator(
+          // 🔁 Pull-to-refresh with rocket
+          return RocketRefreshEmoji(
             onRefresh: () async {
               try {
                 await ref.refresh(repositoryProvider.future);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Repositories updated')),
-                );
               } catch (_) {
+                if(!context.mounted)return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Failed to update repositories')),
                 );
