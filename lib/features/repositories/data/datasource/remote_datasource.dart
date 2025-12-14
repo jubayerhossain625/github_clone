@@ -1,34 +1,34 @@
-// import '../../../../core/network/github_api_service.dart';
-// import '../models/repository_model.dart';
-//
-// class RemoteDataSource {
-//   final GithubApiService api;
-//
-//   RemoteDataSource(this.api);
-//
-//   Future<List<RepositoryModel>> fetch() => api.fetchRepositories();
-// }
-
 import 'package:dio/dio.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/network/github_api_service.dart';
 import '../models/repository_model.dart';
 
 class RemoteDataSource {
-  final GithubApiService api;
+  final GithubApiService apiService;
 
-  RemoteDataSource(this.api);
+  RemoteDataSource(this.apiService);
 
-  Future<List<RepositoryModel>> fetch() async {
+  Future<List<RepositoryModel>> fetchRepositories(int page) async {
     try {
-      return await api.fetchRepositories();
+      final data = await apiService.fetchRepositories(page: page);
+
+      return data
+          .map<RepositoryModel>((e) => RepositoryModel.fromJson(e))
+          .toList();
     } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionError) {
-        throw const NetworkFailure();
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        throw const NetworkFailure('Connection timeout. Please try again.');
       }
-      throw const ServerFailure();
+
+      if (e.response?.statusCode == 403) {
+        throw const ServerFailure(
+            'GitHub API rate limit exceeded.');
+      }
+
+      throw const ServerFailure('Server error occurred.');
     } catch (_) {
-      throw const UnknownFailure();
+      throw const UnknownFailure('Unexpected error occurred.');
     }
   }
 }

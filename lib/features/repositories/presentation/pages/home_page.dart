@@ -8,24 +8,52 @@ import '../widgets/repository_tile.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../widgets/rocket_refresh_emoji.dart';
 
-class HomePage extends ConsumerWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final reposAsync = ref.watch(repositoryProvider);
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage> {
+  final ScrollController _scrollController = ScrollController();
+
+  Future<void> _scrollToTop() async {
+    if (!_scrollController.hasClients) return;
+    await _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final repoState = ref.watch(repositoryProvider);
     final sortState = ref.watch(sortProvider);
     final themeMode = ref.watch(themeProvider);
 
+    final sortedList = [...repoState.items]..sort((a, b) {
+      int result;
+      if (sortState.field == SortField.stars) {
+        result = a.stars.compareTo(b.stars);
+      } else {
+        result = a.updatedAt.compareTo(b.updatedAt);
+      }
+      return sortState.order == SortOrder.asc ? result : -result;
+    });
+
     return Scaffold(
       appBar: AppBar(
-        leading: Icon(
-          FontAwesomeIcons.github,
-          size: 38,
-        ),
-        title: const Text('Repositories'),
+        leading: const Icon(FontAwesomeIcons.github),
+        title: const Text('Flutter Repositories'),
         actions: [
-          // 🔀 Sort Field (Stars / Updated)
           IconButton(
             tooltip: sortState.field == SortField.stars
                 ? 'Sort by Last Updated'
@@ -36,12 +64,11 @@ class HomePage extends ConsumerWidget {
                   : Icons.update,
               color: Colors.green,
             ),
-            onPressed: () {
+            onPressed: () async {
               ref.read(sortProvider.notifier).toggleField();
+              await _scrollToTop();
             },
           ),
-
-          // ⬆⬇ Sort Order
           IconButton(
             tooltip: sortState.order == SortOrder.desc
                 ? 'Descending'
@@ -51,60 +78,59 @@ class HomePage extends ConsumerWidget {
                   ? Icons.arrow_downward
                   : Icons.arrow_upward,
             ),
-            onPressed: () {
+            onPressed: () async {
               ref.read(sortProvider.notifier).toggleOrder();
+              await _scrollToTop();
             },
           ),
-
-          // 🌗 Theme toggle
           IconButton(
             icon: Icon(
               themeMode == ThemeMode.dark
                   ? Icons.light_mode
                   : Icons.dark_mode,
             ),
-            onPressed: () {
-              ref.read(themeProvider.notifier).toggleTheme();
-            },
+            onPressed: () =>
+                ref.read(themeProvider.notifier).toggleTheme(),
           ),
         ],
       ),
-      body: reposAsync.when(
-        data: (list) {
-          final sortedList = [...list];
 
-          // 🔄 Apply sorting
-          sortedList.sort((a, b) {
-            int result;
-            if (sortState.field == SortField.stars) {
-              result = a.stars.compareTo(b.stars);
-            } else {
-              result = a.updatedAt.compareTo(b.updatedAt);
-            }
-            return sortState.order == SortOrder.asc ? result : -result;
-          });
-
-          // 🔁 Pull-to-refresh with rocket
-          return RocketRefreshEmoji(
-            onRefresh: () async {
-              try {
-                await ref.refresh(repositoryProvider.future);
-              } catch (_) {
-                if(!context.mounted)return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Failed to update repositories')),
-                );
-              }
-            },
-            child: ListView.builder(
-              itemCount: sortedList.length,
-              shrinkWrap: true,
-              itemBuilder: (_, i) => RepositoryTile(repo: sortedList[i]),
-            ),
-          );
+      body: RocketRefreshEmoji(
+        onRefresh: () async {
+          await ref
+              .read(repositoryProvider.notifier)
+              .fetchRepositories(refresh: true);
+          await _scrollToTop(); // scroll after refresh
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text(e.toString())),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (scroll) {
+            if (scroll.metrics.pixels >=
+                scroll.metrics.maxScrollExtent - 200 &&
+                !repoState.isLoading &&
+                repoState.hasMore) {
+              ref
+                  .read(repositoryProvider.notifier)
+                  .fetchRepositories();
+            }
+            return false;
+          },
+          child: repoState.items.isEmpty && repoState.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : ListView.builder(
+            shrinkWrap: true,
+            controller: _scrollController,
+            itemCount: sortedList.length + (repoState.isLoading ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index < sortedList.length) {
+                return RepositoryTile(repo: sortedList[index]);
+              }
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            },
+          ),
+        ),
       ),
     );
   }

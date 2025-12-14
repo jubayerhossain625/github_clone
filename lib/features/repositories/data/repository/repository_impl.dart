@@ -1,22 +1,16 @@
-import '../../domain/repository/repository.dart';
 import '../../domain/entities/repository_entity.dart';
+import '../../domain/repository/repository.dart';
 import '../datasource/remote_datasource.dart';
-import '../datasource/local_datasource.dart';
 
 class RepositoryImpl implements Repository {
-  final RemoteDataSource remote;
-  final LocalDataSource local;
+  final RemoteDataSource remoteDataSource;
 
-  RepositoryImpl(this.remote, this.local);
+  RepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<List<RepositoryEntity>> getRepositories() async {
-    try {
-      final data = await remote.fetch();
-      await local.cache(data);
-      return data;
-    } catch (_) {
-      return await local.load();
-    }
+  Future<List<RepositoryEntity>> getRepositories({
+    required int page,
+  }) async {
+    return remoteDataSource.fetchRepositories(page);
   }
 }
