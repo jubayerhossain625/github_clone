@@ -51,8 +51,8 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: const Icon(FontAwesomeIcons.github),
-        title: const Text('Flutter Repositories'),
+        leading: const Icon(FontAwesomeIcons.github,size: 38,),
+        title: const Text('Repositories'),
         actions: [
           IconButton(
             tooltip: sortState.field == SortField.stars
