@@ -20,4 +20,9 @@
 
   <img src="https://i.ibb.co.com/VYtVpgsS/Simulator-Screenshot-i-Phone-16-Pro-2025-12-15-at-20-11-42.png"
            height="500"/>
+<img src="https://i.ibb.co.com/JW6DRkby/Simulator-Screenshot-i-Phone-16-Pro-2025-12-15-at-20-13-05.png" alt="Simulator Screenshot i Phone 16 Pro 2025 12 15 at 20 13 05" border="0">
+
+
 </p>
+
+
